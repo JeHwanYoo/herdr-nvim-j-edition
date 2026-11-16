@@ -39,7 +39,20 @@ The pushed tag runs `.github/workflows/release.yml`, which does two things:
   (`herdr-nvim-app-<target>.tar.gz` and `.sha256`) and attaches them to the
   release.
 
-The root `install.sh` installs the latest release.
+The root `install.sh` installs the latest release's app bundle, and
+`herdr/install.sh` (the TUI plugin) downloads that version's binary.
+
+## CI
+
+Two workflows, kept minimal:
+
+- `ci.yml` runs `just ci` on Linux on each push to `main` and on each PR.
+- `release.yml` runs on a `v*-mirror-*` tag push, or by hand to rebuild a
+  tag. It builds for macOS (arm64, x86_64) and Linux (x86_64, arm64), and
+  runs no tests: the tagged commit already passed CI on `main`.
+
+Windows isn't built or tested here: the herdr TUI plugin's Windows install
+builds from source.
 
 ## Following upstream
 

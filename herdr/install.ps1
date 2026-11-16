@@ -95,7 +95,7 @@ function Install-Prebuilt {
         Say "no prebuilt binary for $arch"
         return $false
     }
-    $url = "https://github.com/ChmaraX/herdr-nvim/releases/download/v$version/herdr-nvim-$target.exe"
+    $url = "https://github.com/JeHwanYoo/herdr-nvim-j-edition/releases/download/v$version/herdr-nvim-$target.exe"
     $http = Save-Url $url $staged
     if ($http -ne "200") {
         if ($http -eq "404") { $script:notPublished = $true }

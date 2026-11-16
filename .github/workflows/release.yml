@@ -1,19 +1,14 @@
 name: release
 # A pushed tag `v<upstream>-mirror-<n>` (AGENTS.md › Versioning) makes the
-# release and attaches every platform's binary and app bundle to it.
+# release from the tag's CHANGELOG.md section and attaches each platform's
+# binary and app bundle. Run it by hand to rebuild an existing tag's assets.
 on:
   push:
     tags: ["v*-mirror-*"]
-  workflow_call:
-    inputs:
-      tag:
-        description: "Tag to build and attach binaries to (e.g. v0.2.1)"
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to build and attach binaries to (e.g. v0.2.1)"
+        description: "Tag to build (e.g. v1.3.1-mirror-1)"
         required: true
         type: string
 permissions:
@@ -21,20 +16,16 @@ permissions:
 env:
   TAG: ${{ inputs.tag || github.ref_name }}
 jobs:
-  # The release itself, made once before the builds upload to it: its notes
-  # are the tag's CHANGELOG.md section.
   create:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
-      - name: create the release
-        env:
+      - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version=${TAG#v}
-          awk -v v="$version" '
+          awk -v v="${TAG#v}" '
             /^## / { if (inside) exit; inside = index($0, "[" v "]") > 0; next }
             inside { print }
           ' CHANGELOG.md > notes.md
@@ -43,7 +34,6 @@ jobs:
   build:
     needs: create
     strategy:
-      # One target's failure must not cancel the others' uploads.
       fail-fast: false
       matrix:
         include:
@@ -51,48 +41,22 @@ jobs:
           - { os: macos-15-intel, target: x86_64-apple-darwin }
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
-          # The plugin's Windows install (herdr/install.ps1) downloads this.
-          - { os: windows-latest, target: x86_64-pc-windows-msvc, exe: .exe }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
-      # Pinned, not `stable`: on macOS `stable` means `brew install neovim`,
-      # and Homebrew no longer ships bottles for the macos-13/14 runners, so it
-      # builds from source and fails at `brew link` (v1.2.0 shipped without
-      # macOS binaries). A pinned version downloads Neovim's own release
-      # tarball on every OS instead.
-      - uses: rhysd/action-setup-vim@v1
-        with:
-          neovim: true
-          version: v0.12.5
       - run: rustup target add ${{ matrix.target }}
-      # Short TMPDIR: test sandboxes put nvim listen sockets under the temp
-      # dir, and macOS's default /var/folders/... TMPDIR can push them past
-      # the 104-byte sun_path limit, which nvim >= 0.12.5 rejects.
-      - run: cargo test
-        env:
-          TMPDIR: ${{ runner.temp }}
-      - run: nvim --headless --noplugin -u NONE -l tests/run.lua
       - run: cargo build --release --target ${{ matrix.target }}
-      - run: cp target/${{ matrix.target }}/release/herdr-nvim${{ matrix.exe }} herdr-nvim-${{ matrix.target }}${{ matrix.exe }}
-        shell: bash
-      # The Herdr app's install (the root install.sh downloads it): the same
-      # binary with its Lua and the app's mods, and its SHA-256. The app has
-      # no Windows install yet, so Windows ships the plugin binary alone.
-      - if: runner.os != 'Windows'
-        run: herdr-app/bundle.sh target/${{ matrix.target }}/release/herdr-nvim ${{ matrix.target }} .
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          files: |
-            herdr-nvim-${{ matrix.target }}${{ matrix.exe }}
-            herdr-nvim-app-${{ matrix.target }}.tar.gz
+      # The TUI plugin's binary (herdr/install.sh) and the app bundle (the
+      # root install.sh).
+      - run: |
+          cp target/${{ matrix.target }}/release/herdr-nvim herdr-nvim-${{ matrix.target }}
+          herdr-app/bundle.sh target/${{ matrix.target }}/release/herdr-nvim ${{ matrix.target }} .
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" --clobber \
+            herdr-nvim-${{ matrix.target }} \
+            herdr-nvim-app-${{ matrix.target }}.tar.gz \
             herdr-nvim-app-${{ matrix.target }}.tar.gz.sha256
-      # The published asset, downloaded and run by the same test that CI runs
-      # (only its prebuilt case), where a missing or misnamed Windows binary
-      # fails instead of skipping.
-      - if: runner.os == 'Windows'
-        name: plugin install tests (published binary)
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/install-windows.ps1 -RequirePrebuilt
