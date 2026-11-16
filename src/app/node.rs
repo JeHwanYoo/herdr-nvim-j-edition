@@ -58,6 +58,7 @@ pub(crate) fn path_to<'a>(node: &'a Value, is: &dyn Fn(&Value) -> bool) -> Optio
     })
 }
 
+#[cfg(test)]
 /// The child indices from `node` down to the first node `is` picks.
 pub(crate) fn index_path(node: &Value, is: &dyn Fn(&Value) -> bool) -> Option<Vec<usize>> {
     if is(node) {

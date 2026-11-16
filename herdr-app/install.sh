@@ -1,33 +1,28 @@
 #!/usr/bin/env bash
-# A convenience helper: does what RECIPE.md describes, the way AGENTS.md says
-# to add a mod, so an agent can do the same by hand.
+# Installs herdr-nvim-j-edition into the Herdr app, with no layout
+# edit: cmd-e opens the tab's nvim from an overlay, in the focused pane's
+# folder, and the tree is the person's own nvim explorer (<leader>e).
 #
-#   herdr-app/install.sh [--home DIR] [--app-bin PATH] [--binary PATH] [--panel-width PX] [--tree native|nvim] [--install-nvim]
+#   herdr-app/install.sh [--home DIR] [--app-bin PATH] [--binary PATH] [--install-nvim]
 #   herdr-app/install.sh --uninstall [--force] [--home DIR] [--app-bin PATH] [--binary PATH]
 #
 # The Herdr app must be open on that home (default: $HERDR_APP_HOME, else
-# ~/.config/herdr-app). Install builds herdr-nvim (or takes the prebuilt
-# --binary: a release's app bundle, which the root install.sh downloads and
-# runs this from). It needs Neovim 0.10+: without one it asks to install it
+# ~/.config/herdr-app). Install builds herdr-nvim with cargo (or takes the
+# prebuilt --binary). It needs Neovim 0.10+: without one it asks to install it
 # (install-nvim.sh: Homebrew's, else Neovim's release, no sudo), or, with no
-# one to ask, stops unless --install-nvim says yes. Then it copies its runtime (binary +
-# lua) to ${XDG_DATA_HOME:-~/.local/share}/herdr-nvim/app/<stamp>, copies the
-# mod into <home>/mods with a wrapper at mods/herdr-nvim/bin/herdr-nvim
-# (pointing at that runtime), runs `herdr-app check` on it, merges keys.json into the person's keys (only
-# free keys: one they already use is kept and reported), and makes RECIPE.md's
-# layout changes in the person's personal layout, the one on screen. On one
-# of Herdr's own layouts it uses the person's copy of it, or clones it once
-# (`layout.clone`, `<name>-copy`). The side panel is --panel-width wide
-# (default 300, unless the layout file sets a width of its own). --tree writes
-# [app] tree into herdr-nvim's config (native: the native tree beside nvim, the
-# default; nvim: nvim's own explorer inside the nvim pane). Run it again to
-# upgrade in place: tab nvims already running keep running and are reported
-# as stale; each restarts on the new runtime the next time its pair opens
-# (unless it has unsaved work). Uninstall takes out exactly those edits (keys
-# still bound to herdr-nvim, its layout changes in every personal layout; no
-# layout is deleted or switched), the mods and the runtime, and stops the
-# app's nvims; one with unsaved buffers or pending comments is listed and
-# kept (with its runtime) unless --force.
+# one to ask, stops unless --install-nvim says yes. Then it copies its runtime
+# (binary + lua) to ${XDG_DATA_HOME:-~/.local/share}/herdr-nvim/app/<stamp>,
+# copies the mods (herdr-nvim, herdr-nvim-picker) into <home>/mods with a
+# wrapper at mods/herdr-nvim/bin/herdr-nvim (pointing at that runtime), runs
+# `herdr-app check` on them and merges keys.json into the person's keys (only
+# free keys: one they already use is kept and reported). An upstream
+# (ChmaraX) install is replaced: its layout edits, its keys and its
+# herdr-nvim-header mod are taken out. Run it again to upgrade in place: tab
+# nvims already running keep running and are reported as stale; each restarts
+# on the new runtime the next time it opens (unless it has unsaved work).
+# Uninstall takes out the keys still bound to herdr-nvim, the mods and the
+# runtime, and stops the app's nvims; one with unsaved buffers or pending
+# comments is listed and kept (with its runtime) unless --force.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -37,10 +32,10 @@ home=${HERDR_APP_HOME:-$HOME/.config/herdr-app}
 app_bin=${HERDR_APP_BIN:-}
 binary=
 install_nvim=
-panel_width=
-tree=
 force=
-mods=(herdr-nvim herdr-nvim-header)
+mods=(herdr-nvim herdr-nvim-picker)
+# Upstream's pane header mod: removed when it is herdr-nvim's own.
+legacy=(herdr-nvim-header)
 
 die() { echo "herdr-nvim: $*" >&2; exit 1; }
 
@@ -51,8 +46,6 @@ while [ $# -gt 0 ]; do
     --home) home=$2; shift ;;
     --app-bin) app_bin=$2; shift ;;
     --binary) binary=$2; shift ;;
-    --panel-width) panel_width=$2; shift ;;
-    --tree) tree=$2; shift ;;
     --install-nvim) install_nvim=1 ;;
     -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
     *) die "unknown argument $1" ;;
@@ -75,7 +68,6 @@ find_app_bin() {
   die "cannot find the Herdr app; pass --app-bin /Applications/Herdr.app/Contents/MacOS/Herdr"
 }
 
-case $tree in ''|native|nvim) ;; *) die "--tree is native or nvim, not $tree" ;; esac
 if [ -n "$binary" ]; then
   [ -x "$binary" ] || die "--binary $binary is not an executable"
   binary=$(cd "$(dirname "$binary")" && pwd)/$(basename "$binary")
@@ -104,6 +96,15 @@ wrapper=$home/mods/herdr-nvim/bin/herdr-nvim
 retire_pick() {
   grep -qs '"nvim: open file from agent output"' "$home/mods/herdr-nvim-pick/mod.json" &&
     rm -rf "${home:?}/mods/herdr-nvim-pick"
+  return 0
+}
+
+# Upstream's mods this fork doesn't have: dropped when they are herdr-nvim's.
+retire_legacy() {
+  local m
+  for m in "${legacy[@]}"; do
+    if ours "$m"; then rm -rf "${home:?}/mods/$m"; fi
+  done
   return 0
 }
 
@@ -178,6 +179,7 @@ if [ "$mode" = uninstall ]; then
   fi
   hc kill herdr-nvim-watch >/dev/null 2>&1 || true
   for m in "${mods[@]}"; do rm -rf "${home:?}/mods/$m"; done
+  retire_legacy
   retire_pick
   prune_runtimes ""
   rmdir "$runtime" 2>/dev/null || true
@@ -230,7 +232,7 @@ fi
 
 # Nothing of the person's changes until the install is known to fit: the
 # width and the layout herdr-nvim would edit, checked with the new runtime.
-run_root "$root" app-setup check --keys "$here/keys.json" ${panel_width:+--panel-width "$panel_width"} ||
+run_root "$root" app-setup check --keys "$here/keys.json" ||
   die "nothing changed"
 
 # Each mod folder is made whole beside the live one (with its wrapper) and
@@ -259,13 +261,6 @@ WRAPPER
   else
     echo "$MARK" > "$new/.herdr-nvim"
   fi
-  # The header is the app's own pane header plus a button: built on this
-  # app's shipped one when it loads, else on the copy in this repo.
-  if [ "$m" = herdr-nvim-header ] && [ -f "$home/mods/pane/main.js" ]; then
-    cp "$new/pane-base.js" "$stage/pane-base.repo.js"
-    cp "$home/mods/pane/main.js" "$new/pane-base.js"
-    "$app_bin" check "$new" >/dev/null 2>&1 || cp "$stage/pane-base.repo.js" "$new/pane-base.js"
-  fi
   "$app_bin" check "$new" || {
     for n in "${mods[@]}"; do rm -rf "$home/mods/.$n.new"; done
     die "herdr-app check failed for $m; nothing replaced"
@@ -290,9 +285,11 @@ for m in "${mods[@]}"; do rm -rf "$home/mods/.$m.old" "$home/mods/.$m.new"; done
 retire_pick
 prune_runtimes "$root"
 
-"$wrapper" app-setup install --keys "$here/keys.json" ${panel_width:+--panel-width "$panel_width"}
+"$wrapper" app-setup install --keys "$here/keys.json"
+# After the layouts no longer name it (`app-setup install` took upstream's
+# edits out).
+retire_legacy
 # The watcher that stops gone tabs' nvims runs the old runtime until it ends:
 # end it; the next nvim pane starts it again on this one.
 hc kill herdr-nvim-watch >/dev/null 2>&1 || true
-[ -z "$tree" ] || "$wrapper" app-config tree "$tree"
 echo "herdr-nvim: installed in $home"

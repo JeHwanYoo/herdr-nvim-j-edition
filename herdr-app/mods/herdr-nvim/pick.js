@@ -1,4 +1,4 @@
-// cmd-o (`herdr-nvim.pick`, taken by the controller, sync.js): a file from
+// cmd-o (`mod.open:herdr-nvim-picker`, which runs this same flow): a file from
 // the agent's output. `herdr-nvim pick-file` gathers the candidates (the
 // agent's session log first, then git changes, the paths on its screen and
 // the repo) and starts the picker in a hidden core terminal; it is shown in a

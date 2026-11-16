@@ -22,7 +22,7 @@
 # its keys are bound by hand, as the README says.
 set -eu
 
-repo=ChmaraX/herdr-nvim
+repo=JeHwanYoo/herdr-nvim-j-edition
 plugin=chmarax.herdr-nvim
 app= tui= uninstall= version= bundle= install_nvim=
 die() { echo "herdr-nvim: $*" >&2; exit 1; }

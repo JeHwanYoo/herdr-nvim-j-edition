@@ -15,6 +15,10 @@
 -- * The tree key's presses, with this nvim's leader, in that state file for
 --   the tree, which takes the same key to hide itself.
 -- * `tree = "nvim"`: the person's own explorer opens with the window.
+--
+-- This fork (JeHwanYoo/herdr-nvim-j-edition) shows no native tree: `setup` leaves the
+-- explorer keys to the person's config, and nothing opens an explorer by
+-- itself. The tree-key helpers below stay for the TUI and the tests.
 local exec = require("herdr-nvim.exec")
 
 local M = {}
@@ -291,13 +295,8 @@ function M.setup()
     group = group,
     callback = function() M.write_state({ focus = tostring(vim.uv.hrtime()) }) end,
   })
-  M.tree_key = M.settings().tree_key or M.DEFAULT_TREE_KEY
-  M.remap_explorer_keys()
-  vim.api.nvim_create_autocmd("User", {
-    group = group,
-    pattern = "VeryLazy",
-    callback = function() M.remap_explorer_keys() end,
-  })
+  -- This fork has no native tree: the person's own explorer keys
+  -- (`<leader>e` and the rest) stay exactly as their config maps them.
 end
 
 return M

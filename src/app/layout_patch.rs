@@ -24,9 +24,15 @@
 //!
 //! Everything else in the layout, including another mod's patch of the
 //! `changes` slot, is left as it is, in its order.
+//!
+//! This fork never puts the footprint in: cmd-e opens the tab's nvim from an
+//! overlay. Only `restore` runs (install and uninstall), taking out what an
+//! upstream install put in; `patch` stays to test it against.
 
+#[cfg(test)]
 use std::collections::HashSet;
 
+#[cfg(test)]
 use anyhow::{bail, Context, Result};
 use serde_json::{json, Value};
 
@@ -80,14 +86,19 @@ fn headers(layout: &mut Value) -> Vec<&mut Value> {
     visit(layout, &mut out);
     out
 }
+#[cfg(test)]
 /// The ids of the standard side panel (Herdr's `main`; the tab bar's Files
 /// button names them), used when a layout has no `files` slot of its own.
 const PANEL: &str = "panel";
+#[cfg(test)]
 const PANEL_BODY: &str = "panel-body";
+#[cfg(test)]
 /// The row the tab block is wrapped in when its parent is not a row.
 const ROW: &str = "herdr-nvim-row";
+#[cfg(test)]
 /// The panel width Herdr 0.1.11 ships in `main` (logical px).
 pub(crate) const SHIPPED_PANEL_PX: f64 = 368.0;
+#[cfg(test)]
 /// herdr-nvim's default: ~15% of a 2021px window, as the person sized it.
 pub(crate) const DEFAULT_PANEL_PX: u32 = 300;
 
@@ -100,6 +111,7 @@ fn panel_id(layout: &Value) -> Option<String> {
     node::id(trail.get(stack.checked_sub(1)?)?).map(str::to_owned)
 }
 
+#[cfg(test)]
 /// Every node id in the layout, floating blocks included.
 fn ids(node: &Value, out: &mut HashSet<String>) {
     if let Some(id) = node::id(node) {
@@ -118,6 +130,7 @@ fn ids(node: &Value, out: &mut HashSet<String>) {
     }
 }
 
+#[cfg(test)]
 fn at_path<'a>(mut node: &'a mut Value, path: &[usize]) -> &'a mut Value {
     for &at in path {
         node = &mut node["children"][at];
@@ -128,6 +141,7 @@ fn at_path<'a>(mut node: &'a mut Value, path: &[usize]) -> &'a mut Value {
 /// Where a node sits among its siblings: what moves to a wrapping row.
 const PLACE: [&str; 3] = ["size", "min", "max"];
 
+#[cfg(test)]
 /// A layout without a `files` slot: add the standard side panel right of its
 /// tab block, hidden until Files or cmd-e shows it. The tab block's parent
 /// row takes it; a tab block in a column is wrapped in a row first.
@@ -215,6 +229,7 @@ fn px(node: &Value) -> Option<f64> {
     node.pointer("/size/px").and_then(Value::as_f64)
 }
 
+#[cfg(test)]
 /// Pure: install into `layout`. Returns whether anything changed.
 pub(crate) fn patch(layout: &mut Value, panel_width: u32) -> Result<bool> {
     if !layout.is_object() {

@@ -226,33 +226,6 @@ pub(crate) fn open_preview(ctx: &Ctx, file: &str) -> Result<Value> {
     Ok(out)
 }
 
-/// Pure: whether the preview shows `path` as an image (the mods' list:
-/// preview.js `KINDS`), which nvim can't show.
-pub(crate) fn is_image(path: &str) -> bool {
-    let ext = std::path::Path::new(path)
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(str::to_ascii_lowercase);
-    matches!(
-        ext.as_deref(),
-        Some("png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp" | "ico" | "svg")
-    )
-}
-
-/// Pure: `text` as JavaScript's `encodeURIComponent` writes it (what the
-/// controller decodes from a `herdr-nvim.swap:<tab>:<file>` command).
-pub(crate) fn uri_component(text: &str) -> String {
-    let mut out = String::new();
-    for byte in text.bytes() {
-        if byte.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&byte) {
-            out.push(byte as char);
-        } else {
-            out.push_str(&format!("%{byte:02X}"));
-        }
-    }
-    out
-}
-
 /// The direction to split nvim's pane (or its preview) in for a swap that
 /// keeps its place: across the split that made the slot, so both nest in
 /// the slot and the new pane keeps its size when the old one closes (along
@@ -276,12 +249,12 @@ fn label(terminal: &str, tab: &str) -> Result<()> {
     .map(drop)
 }
 
-/// Where a tab's nvim starts, and so the tree's root: the git repo of the
-/// folder the tab works in now (`ctx`), else that folder. The repo, not the
-/// folder itself: a shell that did `cd src` would root the tab's nvim, which
-/// lives as long as the tab, in `src`.
+/// Where a tab's nvim opens: the focused pane's own folder (`ctx`), exactly,
+/// not its git repo. Each open `cd`s the tab's nvim there (`daemon::
+/// start_sidebar`), so cmd-e always opens on the pwd of the pane it was
+/// pressed in.
 pub(crate) fn nvim_folder(ctx: &Ctx) -> PathBuf {
-    crate::gitscan::toplevel(&ctx.cwd).unwrap_or_else(|| ctx.cwd.clone())
+    ctx.cwd.clone()
 }
 
 /// The tab's sidebar, opened if it isn't.
@@ -460,39 +433,21 @@ mod tests {
         list.iter().map(|s| (*s).to_owned()).collect()
     }
 
-    // A tab's nvim starts in the repo the tab works in, whichever folder of
-    // it the terminal is in; outside a repo, in that folder.
+    // A tab's nvim opens in the focused pane's own folder, even deep in a
+    // repo: never its repo root.
     #[test]
-    fn nvim_starts_in_the_repo_the_tab_works_in() {
-        let base = env::temp_dir().join(format!("hnv-folder-{}", std::process::id()));
-        let repo = base.join("repo");
-        let plain = base.join("plain");
-        std::fs::create_dir_all(repo.join("src/deep")).unwrap();
-        std::fs::create_dir_all(&plain).unwrap();
-        let git = std::process::Command::new("git")
-            .args(["init", "-q"])
-            .arg(&repo)
-            .status()
-            .unwrap();
-        assert!(git.success());
-        let at = |cwd: &std::path::Path| Ctx {
+    fn nvim_opens_in_the_focused_panes_own_folder() {
+        let at = |cwd: &str| Ctx {
             workspace: "sp".into(),
             tab: tab_id("sp", "tb"),
             focused_pane: String::new(),
-            cwd: cwd.to_path_buf(),
+            cwd: PathBuf::from(cwd),
         };
-        let real = |p: &std::path::Path| std::fs::canonicalize(p).unwrap();
-        assert_eq!(real(&nvim_folder(&at(&repo.join("src/deep")))), real(&repo));
-        assert_eq!(real(&nvim_folder(&at(&repo))), real(&repo));
-        assert_eq!(real(&nvim_folder(&at(&plain))), real(&plain));
-        std::fs::remove_dir_all(&base).unwrap();
-    }
-
-    #[test]
-    fn a_path_reaches_the_controller_as_encodeuricomponent_writes_it() {
-        assert_eq!(uri_component("/a b/it's:x.png"), "%2Fa%20b%2Fit's%3Ax.png");
-        assert_eq!(uri_component("/é.png"), "%2F%C3%A9.png");
-        assert!(is_image("/x/Shot.PNG") && is_image("/x/a.svg") && !is_image("/x/a.md"));
+        assert_eq!(
+            nvim_folder(&at("/repo/src/deep")),
+            PathBuf::from("/repo/src/deep")
+        );
+        assert_eq!(nvim_folder(&at("/plain")), PathBuf::from("/plain"));
     }
 
     #[test]

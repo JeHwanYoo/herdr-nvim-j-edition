@@ -5,13 +5,11 @@
 //   what runs; nothing installs without that press.
 // - "welcome": once, the first time the tab's nvim opens (`welcome`): just
 //   the keys, as the person's keys.json binds them, and where they live.
-//   `herdr-nvim.welcome` shows it again (`welcome({ again: true })`).
 // Enter does the main button, Esc closes.
 
 import { div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { appHome, closeOverlay, openOverlay, props, readTextFile, run, setShared, shared, theme } from "herdr";
-import { appConfig } from "./ops.js";
 
 // The last time the "Neovim is needed" card opened: several requests failing
 // at once (the tree and the controller) open one.
@@ -36,19 +34,13 @@ function keyFor(keys, command) {
   return null;
 }
 
-// Pure: the welcome's rows, [key, what], from keys.json and the settings.
-export function welcomeRows(keys, config) {
-  const nvimTree = config.tree === "nvim";
-  const rows = [
-    [keyFor(keys, "mod.open:herdr-nvim"), nvimTree ? "open or close nvim" : "open or close the tree and nvim"],
-    [keyFor(keys, "herdr-nvim.pick"), "open a file the agent touched"],
-  ];
-  if (!nvimTree) {
-    rows.push([keyFor(keys, "herdr-nvim.reveal"), "jump into the tree"]);
-    if (config.tree_key) rows.push([config.tree_key, "show or hide the tree"]);
-    rows.push(["?", "all tree keys"]);
-  }
-  return rows.filter(([key]) => key);
+// Pure: the welcome's rows, [key, what], from keys.json.
+export function welcomeRows(keys) {
+  return [
+    [keyFor(keys, "mod.open:herdr-nvim"), "open or close nvim (in the focused pane's folder)"],
+    [keyFor(keys, "mod.open:herdr-nvim-picker"), "open a file the agent touched"],
+    ["<leader>e", "your nvim's own explorer"],
+  ].filter(([key]) => key);
 }
 
 // Once: the first time a tab's nvim opened; `again`: whenever asked.
@@ -58,8 +50,7 @@ export async function welcome({ again = false } = {}) {
   const text = await readTextFile(`${appHome()}/keys.json`).catch(() => null);
   let keys = {};
   try { keys = JSON.parse(text ?? "{}"); } catch {}
-  const config = await appConfig().catch(() => ({ tree: "native" }));
-  openCard({ kind: "welcome", rows: welcomeRows(keys, config), config: config.path ?? "~/.config/herdr-nvim/config.toml" });
+  openCard({ kind: "welcome", rows: welcomeRows(keys), config: "~/.config/herdr-nvim/config.toml" });
 }
 
 export class Card {

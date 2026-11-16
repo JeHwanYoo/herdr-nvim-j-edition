@@ -691,6 +691,21 @@ fn refresh_daemon_pane_id(socket: &Path, pane: &str, sidebar: &Sidebar) -> Resul
     Ok(())
 }
 
+/// `:cd` the tab's nvim to `cwd` (best effort: a failure leaves it where it
+/// was, and the pane still opens).
+fn change_dir(socket: &Path, cwd: &Path, sidebar: &Sidebar) {
+    let expr = format!(
+        "execute('cd ' . fnameescape({}))",
+        vim_string_literal(&cwd.to_string_lossy())
+    );
+    if remote_expr_within(socket, &expr, sidebar, Duration::from_secs(2)).is_none() {
+        eprintln!(
+            "herdr-nvim: could not cd the tab's nvim to {}",
+            cwd.display()
+        );
+    }
+}
+
 /// Quote `s` with single quotes, escaping any single quotes it already
 /// contains (`'` -> `'\''`) -- used where a value is spliced into a command
 /// executed by a shell (e.g. the nvim bin in doctor's `pane run` probe), not
@@ -756,6 +771,11 @@ fn start_sidebar() -> Result<(PathBuf, Sidebar)> {
     let plugin_root = plugin_root()?;
     let config = crate::config::load();
     let socket = ensure_daemon(&tab, &plugin_root, &config, &cwd)?;
+    // The app: a daemon from an earlier open may sit in another folder, and
+    // this pane opens where it was asked to (the focused pane's pwd, `--cwd`).
+    if crate::host::choose() == crate::host::Host::App {
+        change_dir(&socket, &cwd, &config.sidebar);
+    }
     wait_for_layout_ready();
     refresh_daemon_pane_id(&socket, &pane, &config.sidebar)?;
     host.sidebar_ready(&socket, &config.sidebar);

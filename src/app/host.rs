@@ -49,19 +49,10 @@ impl HostOps for App {
         super::sidebar::find(&ctx.tab).ok().flatten()
     }
 
-    /// An image (or SVG) goes to the controller's swap (sync.js
-    /// `startSwap`): rendered in nvim's place, nvim kept running.
-    fn preview(&self, ctx: &Ctx, path: &str) -> Result<bool> {
-        if !super::sidebar::is_image(path) {
-            return Ok(false);
-        }
-        let command = format!(
-            "herdr-nvim.swap:{}:{}",
-            super::raw_tab(ctx.tab.as_str()),
-            super::sidebar::uri_component(path)
-        );
-        super::cli::app_do(&command, &json!({}))?;
-        Ok(true)
+    /// No preview pane in this fork (no controller in the layout to swap
+    /// it in): every file, an image too, opens in the tab's nvim.
+    fn preview(&self, _ctx: &Ctx, _path: &str) -> Result<bool> {
+        Ok(false)
     }
 
     fn focus(&self, pane: &str) {
@@ -88,17 +79,8 @@ impl HostOps for App {
         Ok((tab.as_str().to_owned(), pane, cwd))
     }
 
-    fn sidebar_ready(&self, socket: &Path, sidebar: &Sidebar) {
+    fn sidebar_ready(&self, _socket: &Path, _sidebar: &Sidebar) {
         super::watch::ensure_running();
-        if crate::config::load().app.tree == crate::config::TreeMode::Nvim {
-            // nvim's own explorer, once this window is attached (UIEnter).
-            let _ = daemon::remote_expr_within(
-                socket,
-                "luaeval(\"require('herdr-nvim.app').explore_on_ui()\")",
-                sidebar,
-                std::time::Duration::from_secs(2),
-            );
-        }
         // This process becomes nvim's screen next (exec): its `hc connect`
         // would be left a zombie.
         rpc::disconnect();
