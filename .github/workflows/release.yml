@@ -1,5 +1,9 @@
 name: release
+# A pushed tag `v<upstream>-mirror-<n>` (AGENTS.md › Versioning) makes the
+# release and attaches every platform's binary and app bundle to it.
 on:
+  push:
+    tags: ["v*-mirror-*"]
   workflow_call:
     inputs:
       tag:
@@ -14,8 +18,30 @@ on:
         type: string
 permissions:
   contents: write
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 jobs:
+  # The release itself, made once before the builds upload to it: its notes
+  # are the tag's CHANGELOG.md section.
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${TAG#v}
+          awk -v v="$version" '
+            /^## / { if (inside) exit; inside = index($0, "[" v "]") > 0; next }
+            inside { print }
+          ' CHANGELOG.md > notes.md
+          gh release view "$TAG" >/dev/null 2>&1 ||
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag
   build:
+    needs: create
     strategy:
       # One target's failure must not cancel the others' uploads.
       fail-fast: false
@@ -31,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.TAG }}
       # Pinned, not `stable`: on macOS `stable` means `brew install neovim`,
       # and Homebrew no longer ships bottles for the macos-13/14 runners, so it
       # builds from source and fails at `brew link` (v1.2.0 shipped without
@@ -59,7 +85,7 @@ jobs:
         run: herdr-app/bundle.sh target/${{ matrix.target }}/release/herdr-nvim ${{ matrix.target }} .
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag }}
+          tag_name: ${{ env.TAG }}
           files: |
             herdr-nvim-${{ matrix.target }}${{ matrix.exe }}
             herdr-nvim-app-${{ matrix.target }}.tar.gz

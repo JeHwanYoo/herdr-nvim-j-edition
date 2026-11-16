@@ -1,5 +1,21 @@
 # Changelog
 
+Versions here are `<upstream version>-mirror-<n>` (AGENTS.md › Versioning).
+Entries below 1.3.1-mirror-1 are upstream's
+([ChmaraX/herdr-nvim](https://github.com/ChmaraX/herdr-nvim)).
+
+## [1.3.1-mirror-1](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1...v1.3.1-mirror-1) (2026-11-16)
+
+Based on upstream 1.3.1.
+
+### Changes from upstream
+
+* **app:** no layout edits: `cmd-e` is an overlay mod that toggles the tab's nvim pane; the install takes out an upstream install's layout edits, keys and `herdr-nvim-header` mod
+* **app:** nvim opens in the focused pane's own folder (not its git root), and a running tab nvim is `:cd`'d there on every open
+* **app:** no native tree, sync controller, pane header or preview; your nvim's own explorer keys (`<leader>e`) stay as your config maps them
+* **app:** `cmd-o` is its own overlay mod, `herdr-nvim-picker`
+* **release:** a pushed `v*-mirror-*` tag builds the release (release-please removed)
+
 ## [1.3.1](https://github.com/ChmaraX/herdr-nvim/compare/v1.3.0...v1.3.1) (2026-11-06)
 
 
