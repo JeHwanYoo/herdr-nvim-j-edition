@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1...v2.0.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **app:** run without layout edits, open nvim in the focused pane's pwd
+
+### Features
+
+* **app:** run without layout edits, open nvim in the focused pane's pwd ([2001ec2](https://github.com/JeHwanYoo/herdr-nvim-j-edition/commit/2001ec2f4765992e4f58b1695edca6dd5f99ac6d))
+
 ## [1.3.1](https://github.com/ChmaraX/herdr-nvim/compare/v1.3.0...v1.3.1) (2026-11-06)
 
 
