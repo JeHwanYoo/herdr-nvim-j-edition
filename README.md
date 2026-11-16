@@ -30,11 +30,21 @@ sent to the agent.
 
 - Herdr app 0.1.11+ (tested on macOS; Linux uses the same scripts but is untested)
 - Neovim 0.10+
-- A Rust toolchain (cargo). This fork ships no release binaries, so it builds from source.
+- A Rust toolchain (cargo), only to build from source
 
 ## Install
 
 With the Herdr app open:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/JeHwanYoo/herdr-nvim-j-edition/main/install.sh | sh -s -- --app
+```
+
+It downloads the prebuilt bundle from this fork's latest release and checks
+it against its SHA-256. Run it again to upgrade; add `--uninstall` to remove
+it, or `--install-nvim` to install Neovim without being asked.
+
+From source instead:
 
 ```sh
 git clone https://github.com/JeHwanYoo/herdr-nvim-j-edition.git
@@ -45,7 +55,7 @@ herdr-app/install.sh --uninstall  # remove it
 
 The installer does three things:
 
-1. builds the binary and copies it, with its Lua runtime, into `~/.local/share/herdr-nvim/app`;
+1. copies the binary (downloaded or built) with its Lua runtime into `~/.local/share/herdr-nvim/app`;
 2. adds two mods, `herdr-nvim` and `herdr-nvim-picker`;
 3. adds its keys to `keys.json`, but only where the key is free.
 
