@@ -206,7 +206,7 @@ pub(crate) fn open_preview(ctx: &Ctx, file: &str) -> Result<Value> {
             "direction": split,
             "pane": anchor,
             "mod": super::layout_patch::MOD,
-            "props": {"preview": file, "tab": raw},
+            "props": {"preview": file, "tab": raw, "space": ctx.workspace, "cwd": ctx.cwd},
         }),
     )?;
     // The preview's pane (`true` when the app didn't name it).
@@ -394,8 +394,8 @@ pub fn toggle_cmd() -> Result<()> {
     Ok(())
 }
 
-/// `herdr-nvim app-preview --file <path> --ctx JSON` (the controller's
-/// Preview): the file rendered where the tab's nvim shows (`open_preview`).
+/// `herdr-nvim app-preview --file <path> --ctx JSON` (Neovim's
+/// `:HerdrPreview`): render the file in the tab's Neovim pane.
 pub fn preview_cmd() -> Result<()> {
     let args: Vec<String> = env::args().skip(2).collect();
     let file = cli::flag(&args, "--file")?

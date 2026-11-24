@@ -19,7 +19,7 @@ nvim config handle the file tree.
 | Layout | The install edits your layout (the Files slot, a controller block, pane headers) and switches to a copy of Herdr's built-in layout | Never touches a layout. `cmd-e` is an overlay mod that toggles the tab's nvim pane |
 | File tree | A native tree panel; takes over `<leader>e` | Your nvim's own explorer (LazyVim: `<leader>e` opens Snacks' explorer) |
 | Folder nvim opens in | The git root of the folder the tab works in | **The pwd of the focused pane when you press `cmd-e`.** An nvim that's already running is `:cd`'d there on every open |
-| Preview | Markdown, image and mermaid preview pane | None. Images open in nvim too |
+| Preview | Markdown, image and mermaid preview pane | `:HerdrPreview` opens the saved Markdown file in a pane with the terminal font size |
 | `cmd-o` | `herdr-nvim.pick`, a controller command | `herdr-nvim-picker`, its own overlay mod |
 
 These still work as in upstream: one nvim per tab, with buffers, cursor and
@@ -69,7 +69,12 @@ and its `herdr-nvim-header` mod.
 | --- | --- |
 | `cmd-e` | Open or close the tab's nvim, in the focused pane's pwd |
 | `cmd-o` | Pick a file the agent read or edited, and open it in nvim |
+| `:HerdrPreview` | Preview the saved Markdown file in Herdr. Click **Source** to return to Neovim |
 | `<leader>e` (in nvim) | Your own explorer, as your config maps it |
+
+When Snacks image support is enabled, Neovim can display images and Markdown
+Mermaid diagrams inline in the Herdr app. Mermaid rendering uses Snacks'
+configured converter.
 
 ## File picker
 

@@ -281,6 +281,30 @@ function M.explore_on_ui()
 end
 
 function M.setup()
+  vim.api.nvim_create_user_command("HerdrPreview", function()
+    local path = vim.api.nvim_buf_get_name(0)
+    local extension = vim.fn.fnamemodify(path, ":e"):lower()
+    if not vim.tbl_contains({ "md", "markdown", "mdx" }, extension) or vim.fn.filereadable(path) ~= 1 then
+      vim.notify("Open a saved Markdown file to preview it.", vim.log.levels.WARN)
+      return
+    end
+    local workspace = vim.env.HERDR_WORKSPACE_ID
+    local tab = vim.env.HERDR_TAB_ID
+    if not workspace or not tab or not vim.startswith(tab, workspace .. ":") then
+      vim.notify("Herdr could not identify this Neovim tab.", vim.log.levels.ERROR)
+      return
+    end
+    local context = vim.json.encode({
+      space = workspace,
+      tab = tab:sub(#workspace + 2),
+      cwd = vim.fn.getcwd(),
+    })
+    vim.system({ exec.self(), "app-preview", "--file", path, "--ctx", context }, { text = true }, function(result)
+      if result.code ~= 0 then
+        vim.schedule(function() vim.notify(vim.trim(result.stderr or ""), vim.log.levels.ERROR) end)
+      end
+    end)
+  end, { desc = "Preview the saved Markdown file in Herdr" })
   local group = vim.api.nvim_create_augroup("herdr-nvim-app", { clear = true })
   vim.api.nvim_create_autocmd({ "BufEnter", "DirChanged" }, { group = group, callback = write_current })
   -- A rename of the current file (the tree's `r`, done in a helper window)

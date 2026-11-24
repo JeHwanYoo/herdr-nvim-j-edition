@@ -159,6 +159,32 @@ T.test("app: in nvim mode the explorer key keeps doing what it did", function()
   T.eq(opened, 1)
 end)
 
+T.test("app: HerdrPreview sends the saved file and the daemon's tab context", function()
+  local file = vim.fn.tempname() .. " notes.md"
+  vim.fn.writefile({ "# Preview" }, file)
+  file = vim.uv.fs_realpath(file)
+  vim.cmd.edit(vim.fn.fnameescape(file))
+  app.setup()
+  local previous_system = vim.system
+  local previous_workspace = vim.env.HERDR_WORKSPACE_ID
+  local previous_tab = vim.env.HERDR_TAB_ID
+  vim.env.HERDR_WORKSPACE_ID = "sp-test"
+  vim.env.HERDR_TAB_ID = "sp-test:tb-test"
+  local argv
+  vim.system = function(command) argv = command end
+  local ran, err = pcall(vim.cmd.HerdrPreview)
+  vim.system = previous_system
+  vim.env.HERDR_WORKSPACE_ID = previous_workspace
+  vim.env.HERDR_TAB_ID = previous_tab
+  vim.cmd.bwipeout()
+  vim.fn.delete(file)
+  vim.api.nvim_del_user_command("HerdrPreview")
+  vim.api.nvim_del_augroup_by_name("herdr-nvim-app")
+  assert(ran, err)
+  T.eq(vim.list_slice(argv, 2, 5), { "app-preview", "--file", file, "--ctx" })
+  T.eq(vim.json.decode(argv[6]), { space = "sp-test", tab = "tb-test", cwd = vim.fn.getcwd() })
+end)
+
 T.test("app: keys that open no explorer are left alone", function()
   reset()
   local hit = 0

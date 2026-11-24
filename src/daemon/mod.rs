@@ -260,6 +260,9 @@ pub(crate) fn app_daemon(command: &mut Command, tab: &str, stamp: Option<String>
         .arg("--cmd")
         .arg("set title titlestring=nvim\\ ·\\ %t")
         .env("HERDR_NVIM_HOST", "app")
+        // Herdr's Kitty renderer accepts inline bytes but rejects file transfers.
+        // Snacks uses inline chunks when its SSH transport profile is enabled.
+        .env("SNACKS_SSH", "1")
         .env_remove("HC_TERMINAL_ID")
         .env_remove("HC_SCOPE");
     if env::var_os("HERDR_NVIM_SELF").is_none() {

@@ -49,8 +49,8 @@ impl HostOps for App {
         super::sidebar::find(&ctx.tab).ok().flatten()
     }
 
-    /// No preview pane in this fork (no controller in the layout to swap
-    /// it in): every file, an image too, opens in the tab's nvim.
+    /// Open files in Neovim by default. The user can request a Markdown
+    /// preview from inside Neovim with `:HerdrPreview`.
     fn preview(&self, _ctx: &Ctx, _path: &str) -> Result<bool> {
         Ok(false)
     }

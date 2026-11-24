@@ -4,6 +4,11 @@ Versions here are `<upstream version>-mirror-<n>` (AGENTS.md › Versioning).
 Entries below 1.3.1-mirror-1 are upstream's
 ([ChmaraX/herdr-nvim](https://github.com/ChmaraX/herdr-nvim)).
 
+## [1.3.1-mirror-2](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1-mirror-1...v1.3.1-mirror-2) (2026-11-24)
+
+* **app:** open a Markdown preview with `:HerdrPreview`. Its text follows the terminal font size.
+* **app:** send Snacks images and Markdown Mermaid diagrams to Herdr as inline Kitty graphics bytes.
+
 ## [1.3.1-mirror-1](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1...v1.3.1-mirror-1) (2026-11-16)
 
 Based on upstream 1.3.1.
