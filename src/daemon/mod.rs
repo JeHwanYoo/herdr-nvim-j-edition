@@ -259,6 +259,11 @@ pub(crate) fn app_daemon(command: &mut Command, tab: &str, stamp: Option<String>
         )
         .arg("--cmd")
         .arg("set title titlestring=nvim\\ ·\\ %t")
+        .arg("--cmd")
+        .arg(
+            "lua if vim.env.TERM_PROGRAM == 'ghostty' and vim.env.SNACKS_GHOSTTY == nil then \
+             vim.env.SNACKS_GHOSTTY = '1' end",
+        )
         .env("HERDR_NVIM_HOST", "app")
         // Herdr's Kitty renderer accepts inline bytes but rejects file transfers.
         // Snacks uses inline chunks when its SSH transport profile is enabled.

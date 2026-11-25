@@ -4,6 +4,10 @@ Versions here are `<upstream version>-mirror-<n>` (AGENTS.md › Versioning).
 Entries below 1.3.1-mirror-1 are upstream's
 ([ChmaraX/herdr-nvim](https://github.com/ChmaraX/herdr-nvim)).
 
+## [1.3.1-mirror-3](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1-mirror-2...v1.3.1-mirror-3) (2026-11-25)
+
+* **app:** restore inline Snacks images, including Mermaid diagrams, when the Neovim sidebar first attaches or reattaches. Markdown diagrams appear without scrolling.
+
 ## [1.3.1-mirror-2](https://github.com/JeHwanYoo/herdr-nvim-j-edition/compare/v1.3.1-mirror-1...v1.3.1-mirror-2) (2026-11-24)
 
 * **app:** open a Markdown preview with `:HerdrPreview`. Its text follows the terminal font size.
