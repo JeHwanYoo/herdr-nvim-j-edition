@@ -281,6 +281,7 @@ function M.explore_on_ui()
 end
 
 function M.setup()
+  require("herdr-nvim.snacks_images").setup()
   vim.api.nvim_create_user_command("HerdrPreview", function()
     local path = vim.api.nvim_buf_get_name(0)
     local extension = vim.fn.fnamemodify(path, ":e"):lower()
